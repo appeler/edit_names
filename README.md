@@ -15,13 +15,18 @@ We estimate a knn classifier with an edit distance based distance metric to pred
 6. When predicting, we take a weighted prediction based on the n of each of the names. For instance, say the closest names are:
 	ABC, n = 100, p_white = 100
 	BBC, n = 10, p_white = 0
-then prediction = (100*1 + 10*0)/110
+	then prediction = (100*1 + 10*0)/110
 7. compare performance to the LSTM model
 
+ 
 ### Scripts
 
 * [KNN Edit Distance Classifier Notebook](scripts/knn_edit_classifier.ipynb)
 * [KNN Cosine Distance Classifier Notebook](scripts/knn_cosine_classifier.ipynb)
+
+### Future
+
+To make search for k-nearest [edit distance] neighbors faster, we plan to implement a BK-Tree backend.
 
 ### Authors
 
