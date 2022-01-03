@@ -1,0 +1,139 @@
+import Levenshtein as lv
+import multiprocessing as mp
+import numpy as np
+import pandas as pd
+
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics import classification_report
+from tqdm import tqdm
+
+
+def predict_race(arg):
+    # reading the tuple passed on by the calling function
+    row_data, corpus_df, k, filt = arg
+
+    # resizing the tf-idf (1, m) & corpus vectors to be (n, m)
+    #  n = number of samples
+    #  m = number of dimentions
+    orig_vector = np.array(row_data['tfidf']).reshape(1, -1)
+    corp_vector = np.array([x for x in corpus_df['tfidf']])
+
+    # calculating the cosine similarity beteween the name vector
+    #   and the corpus vectors.  Then filtering for only values
+    #   that are greater that what was passed on
+    cossim = cosine_similarity(orig_vector, corp_vector)
+    filt_result = np.argwhere(cossim >= filt).reshape(-1)
+
+    # if we don't get any matches on cosine similarity >= "value"
+    #    we open up the critiria to 0.1 to get something
+    if (len(filt_result) == 0):
+        filt_result = predict_race((row_data, corpus_df, k, .1))
+
+    # filtering the corpus dataframe to only inclue the items
+    #   that met the cosine similarity filter
+    filtered_corpus_df = corpus_df.iloc[filt_result]
+
+    # calculate the levenshtein distance between our vector
+    #   and the filtered corpus vectors.
+    # Levenshtein is an expensive operation so we don't
+    #   want to calculate it for every name in the corpus
+    lev_dist = calc_leven(row_data['name_last'],
+                          filtered_corpus_df['name_last'])
+
+    # The calc_leven function returns a dictionary
+    #  we seperate the keys from the values into arrays
+    #  that we can use which names are the most similar
+    #  i.e. smallest levenstein distance
+    values = np.array(list(lev_dist.values()))
+    keys = np.array(list(lev_dist.keys()))
+
+    if (k < values.shape[0]):
+        # This is when k is smaller than the size of the
+        #   values array, we can partition it by the smallest
+        #   k values
+        filt_values = np.argpartition(values, k)
+        max_value = np.max(values[filt_values[:k]])
+    else:
+        # Otherwise whatever the filt_value are will be the
+        #   k nearest neighbors to our string
+        filt_values = values.shape[0] - 1
+        max_value = np.max(values[filt_values])
+
+    # if (isinstance(filt_values, np.ndarray)):
+    #     max_value = np.max(values[filt_values[:k]])
+    # else:
+    #     max_value = np.max(values[filt_values])
+
+    mask = (values <= max_value) & (values > 0)
+    mask_idx = np.argwhere(mask).reshape(-1)
+    df_idx = keys[mask_idx]
+
+    total_sum = (corpus_df.iloc[df_idx]['total_n'].sum())
+    pred_white = (corpus_df.iloc[df_idx]['nh_white'] *
+                  corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
+    pred_black = (corpus_df.iloc[df_idx]['nh_black'] *
+                  corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
+    pred_hispanic = (corpus_df.iloc[df_idx]['hispanic'] *
+                     corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
+    pred_asian = (corpus_df.iloc[df_idx]['asian'] *
+                  corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
+    predictions = [pred_asian, pred_hispanic, pred_black, pred_white]
+
+    # final_pred.append(predictions.index(max(predictions)))
+
+    # return_result = np.array(filtered_corpus_df)
+
+    return predictions.index(max(predictions))
+
+
+def calc_leven(orig_string, filt_df):
+    lev_dist = {}
+    if not (isinstance(filt_df, str)):
+        for idx, row in filt_df.iteritems():
+            lev = lv.distance(orig_string, row)
+            lev_dist[idx] = lev
+    else:
+        lev = lv.distance(orig_string, filt_df)
+        lev_dist[0] = lev
+    return lev_dist
+
+
+def calc_prop(row):
+    total = row['total_n']
+    values = [(i/total) for i in row]
+    return pd.Series(values)
+
+
+def get_race_idx(val, races):
+    race_idx = races.index(val)
+    return race_idx
+
+
+def find_ngrams(text, n):
+    a = zip(*[text[i:] for i in range(n)])
+    wi = []
+    for i in a:
+        w = ''.join(i)
+        try:
+            idx = words_list.index(w)
+        except:
+            idx = 0
+        wi.append(idx)
+    return wi
+
+
+def check_k(test_df, corpus_df, k, filt):
+    results = []
+
+    num_cpu = mp.cpu_count()
+    pool = mp.Pool(processes=(num_cpu))
+
+    # for idx, row in tqdm(test_df.iterrows()):
+    r = pool.map(predict_race, [(row, corpus_df, k, filt)
+                                for idx, row in test_df.iterrows()])
+    results.append(r)
+
+    pool.close()
+    pool.join()
+
+    return results
