@@ -10,13 +10,13 @@ from tqdm import tqdm
 
 def predict_race(arg):
     # reading the tuple passed on by the calling function
-    row_data, corpus_df, k, filt = arg
+    idx, row_data, test_df, corpus_df, corp_vector, k, filt = arg
 
     # resizing the tf-idf (1, m) & corpus vectors to be (n, m)
     #  n = number of samples
     #  m = number of dimentions
     orig_vector = np.array(row_data['tfidf']).reshape(1, -1)
-    corp_vector = np.array([x for x in corpus_df['tfidf']])
+    # corp_vector = np.array([x for x in corpus_df['tfidf']])
 
     # calculating the cosine similarity beteween the name vector
     #   and the corpus vectors.  Then filtering for only values
@@ -27,7 +27,8 @@ def predict_race(arg):
     # if we don't get any matches on cosine similarity >= "value"
     #    we open up the critiria to 0.1 to get something
     if (len(filt_result) == 0):
-        filt_result = predict_race((row_data, corpus_df, k, .1))
+        filt_result = predict_race(
+            (idx, row_data, test_df, corpus_df, corp_vector, k, .1))
 
     # filtering the corpus dataframe to only inclue the items
     #   that met the cosine similarity filter
@@ -81,7 +82,8 @@ def predict_race(arg):
 
     # final_pred.append(predictions.index(max(predictions)))
 
-    # return_result = np.array(filtered_corpus_df)
+    test_df.loc[test_df['name_last'] == row_data['name_last'],
+                'pred_race'] = predictions.index(max(predictions))
 
     return predictions.index(max(predictions))
 
@@ -128,8 +130,10 @@ def check_k(test_df, corpus_df, k, filt):
     num_cpu = mp.cpu_count()
     pool = mp.Pool(processes=(num_cpu))
 
+    corp_vector = np.array([x for x in corpus_df['tfidf']])
+
     # for idx, row in tqdm(test_df.iterrows()):
-    r = pool.map(predict_race, [(row, corpus_df, k, filt)
+    r = pool.map(predict_race, [(idx, row, test_df, corpus_df, corp_vector, k, filt)
                                 for idx, row in test_df.iterrows()])
     results.append(r)
 
