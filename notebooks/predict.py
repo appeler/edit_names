@@ -27,8 +27,14 @@ def predict_race(arg):
     # if we don't get any matches on cosine similarity >= "value"
     #    we open up the critiria to 0.1 to get something
     if (len(filt_result) == 0):
-        filt_result = predict_race(
-            (idx, row_data, test_df, corpus_df, corp_vector, k, .1))
+        # this is to handle if we still are not getting anything
+        #  after opening up cosine similarity.  Just return a 0
+        #  which right now is "Asian"
+        if (filt == 0.1):
+            return 0
+        else:
+            filt_result = predict_race(
+                (idx, row_data, test_df, corpus_df, corp_vector, k, .1))
 
     # filtering the corpus dataframe to only inclue the items
     #   that met the cosine similarity filter
