@@ -18,15 +18,15 @@ We estimate a knn classifier with an edit distance based distance metric to pred
 	then prediction = (100*1 + 10*0)/110
 7. compare performance to the LSTM model
 
- 
+
 ### Scripts
 
-* [KNN Edit Distance Classifier Notebook](scripts/knn_edit_classifier.ipynb)
+* [KNN Edit Distance Classifier Notebook](scripts/knn_edit_classifier.ipynb) --- uses parallel processing
 * [KNN Cosine Distance Classifier Notebook](scripts/knn_cosine_classifier.ipynb)
 
 ### Future
 
-To make search for k-nearest [edit distance] neighbors faster, we plan to implement a BK-Tree backend.
+To make search for k-nearest [edit distance] neighbors faster, we plan to implement a BK-Tree or SymSpell backend.
 
 ### Authors
 
