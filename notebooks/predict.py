@@ -95,13 +95,11 @@ def calc_leven(orig_string, filt_df):
     # determing if levenshtein was passed a dataframe or a string
     #  if its just a string then we return a dictionary with index 0
     if not (isinstance(filt_df, str)):
-        for idx, row in filt_df.iteritems():
-            lev = lv.distance(orig_string, row)
-            lev_dist[idx] = lev
+        lev_dist = filt_df.apply(lambda c: lv.distance(orig_string, c))
+        return lev_dist.to_dict()
     else:
         lev = lv.distance(orig_string, filt_df)
-        lev_dist[0] = lev
-    return lev_dist
+        return {0: lev}
 
 
 def calc_prop(row):
