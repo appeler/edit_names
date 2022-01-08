@@ -1,7 +1,10 @@
 ## Edit Names: KNN Edit Distance Classifier
 
-We estimate a knn classifier with an edit distance based distance metric to predict the race and ethnicity of *unseen* names. (We don't try to learn the naive Bayes classifier with k = 0 and name in the corpus.) The accuracy of the knn classifier is XX%. The OOS confusion matrix:
+Using the [Florida Voting Registration Data](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/UBIG3F), we estimate a knn classifier with an edit distance based distance metric to predict the race and ethnicity of *unseen* names. (We don't try to learn the naive Bayes classifier with k = 0 and name in the corpus.) 
 
+For one set of analysis, we assume that the true label for a name is the modal race/ethnicity that people with that last name identify with. The accuracy of the knn classifier is XX%. The OOS confusion matrix:
+
+For another set of analysis, we use the probability estimates and find the k for the smallest RMSE. The generalization RMSE is XX.
 
 ### Workflow
 
@@ -18,7 +21,6 @@ We estimate a knn classifier with an edit distance based distance metric to pred
 	then prediction = (100*1 + 10*0)/110
 7. compare performance to the LSTM model
 
-
 ### Scripts
 
 * [KNN Edit Distance Classifier Notebook](scripts/knn_edit_classifier.ipynb) --- uses parallel processing
@@ -30,4 +32,4 @@ To make search for k-nearest [edit distance] neighbors faster, we plan to implem
 
 ### Authors
 
-Bashar Naji and Gaurav Sood
+Suriyan Laohaprapanon, Bashar Naji, and Gaurav Sood
