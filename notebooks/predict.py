@@ -28,13 +28,9 @@ def predict_race(arg):
     #    we open up the critiria to 0.1 to get something
     if (len(filt_result) == 0):
         # this is to handle if we still are not getting anything
-        #  after opening up cosine similarity.  Just return a 0
-        #  which right now is "Asian"
-        if (filt == 0.1):
-            return 0
-        else:
-            filt_result = predict_race(
-                (idx, row_data, test_df, corpus_df, corp_vector, k, .1))
+        #  after opening up cosine similarity.  Just return the
+        #  most common class, which is nh_white/3
+        return 3
 
     # filtering the corpus dataframe to only inclue the items
     #   that met the cosine similarity filter
@@ -44,7 +40,7 @@ def predict_race(arg):
     #   and the filtered corpus vectors.
     # Levenshtein is an expensive operation so we don't
     #   want to calculate it for every name in the corpus
-    lev_dist = calc_leven(row_data['name_last'],
+    lev_dist = calc_leven_vector(row_data['name_last'],
                           filtered_corpus_df['name_last'])
 
     # The calc_leven function returns a dictionary
@@ -66,41 +62,49 @@ def predict_race(arg):
         filt_values = values.shape[0] - 1
         max_value = np.max(values[filt_values])
 
-    # Determining which indexes from teh corpus need to be considered
-    #   for k nearest neighbors distance wise.
+    # if (isinstance(filt_values, np.ndarray)):
+    #     max_value = np.max(values[filt_values[:k]])
+    # else:
+    #     max_value = np.max(values[filt_values])
+
     mask = (values <= max_value) & (values > 0)
     mask_idx = np.argwhere(mask).reshape(-1)
-    df_idx = keys[mask_idx]
+    df_idx = keys[mask_idx]    
+    
+    filter_df = corpus_df.iloc[df_idx]
 
-    # Calculating the probability for each race
-    total_sum = (corpus_df.iloc[df_idx]['total_n'].sum())
-    pred_white = (corpus_df.iloc[df_idx]['nh_white'] *
-                  corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
-    pred_black = (corpus_df.iloc[df_idx]['nh_black'] *
-                  corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
-    pred_hispanic = (corpus_df.iloc[df_idx]['hispanic'] *
-                     corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
-    pred_asian = (corpus_df.iloc[df_idx]['asian'] *
-                  corpus_df.iloc[df_idx]['total_n']).sum() / total_sum
-
-    # Creating a list of probilities so we can just get the max index
+    total_sum  = (filter_df['total_n'].sum())
+    pred_white = (filter_df['nh_white'].dot(filter_df['total_n'])).sum() / total_sum
+    pred_black = (filter_df['nh_black'].dot(filter_df['total_n'])) / total_sum
+    pred_hispanic = (filter_df['hispanic'].dot(filter_df['total_n'])).sum() / total_sum
+    pred_asian = (filter_df['asian'].dot(filter_df['total_n'])).sum() / total_sum
     predictions = [pred_asian, pred_hispanic, pred_black, pred_white]
+
+    # final_pred.append(predictions.index(max(predictions)))
+    test_df.loc[test_df['name_last'] == row_data['name_last'],
+                'pred_race'] = predictions.index(max(predictions))
 
     return predictions.index(max(predictions))
 
 
 def calc_leven(orig_string, filt_df):
     lev_dist = {}
+    if not (isinstance(filt_df, str)):
+        for idx, row in filt_df.iteritems():
+            lev = lv.distance(orig_string, row)
+            lev_dist[idx] = lev
+    else:
+        lev = lv.distance(orig_string, filt_df)
+        lev_dist[0] = lev
+    return lev_dist
 
-    # determing if levenshtein was passed a dataframe or a string
-    #  if its just a string then we return a dictionary with index 0
+def calc_leven_vector(orig_string, filt_df):
     if not (isinstance(filt_df, str)):
         lev_dist = filt_df.apply(lambda c: lv.distance(orig_string, c))
         return lev_dist.to_dict()
     else:
         lev = lv.distance(orig_string, filt_df)
         return {0: lev}
-
 
 def calc_prop(row):
     total = row['total_n']
@@ -129,19 +133,16 @@ def find_ngrams(text, n):
 def check_k(test_df, corpus_df, k, filt):
     results = []
 
-    num_cpu = mp.cpu_count()
-    pool = mp.Pool(processes=(num_cpu))
+    num_cpu = mp.cpu_count() 
+    pool = mp.pool.ThreadPool(processes=8)
 
-    # creating the corpus vector of tf-idf once and then passing it along
-    #   to other methods as required
     corp_vector = np.array([x for x in corpus_df['tfidf']])
 
-    # Multi-processing
+    # for idx, row in tqdm(test_df.iterrows()):
     r = pool.map(predict_race, [(idx, row, test_df, corpus_df, corp_vector, k, filt)
                                 for idx, row in test_df.iterrows()])
     results.append(r)
 
-    # Cleaning up the multi-processes
     pool.close()
     pool.join()
 
