@@ -15,7 +15,7 @@ def predict_race(arg):
     # resizing the tf-idf (1, m) & corpus vectors to be (n, m)
     #  n = number of samples
     #  m = number of dimentions
-    orig_vector = np.array(row_data['tfidf']).reshape(1, -1)
+    orig_vector = np.array(row_data["tfidf"]).reshape(1, -1)
     # corp_vector = np.array([x for x in corpus_df['tfidf']])
 
     # calculating the cosine similarity beteween the name vector
@@ -26,11 +26,11 @@ def predict_race(arg):
 
     # if we don't get any matches on cosine similarity >= "value"
     #    we open up the critiria to 0.1 to get something
-    if (len(filt_result) == 0):
+    if len(filt_result) == 0:
         # this is to handle if we still are not getting anything
         #  after opening up cosine similarity.  Just return the
-        #  most common class, which is nh_white/3
-        return 3
+        #  most common class, which is nh_white/3 with 1% probability
+        return 3, 0.01
 
     # filtering the corpus dataframe to only inclue the items
     #   that met the cosine similarity filter
@@ -40,8 +40,7 @@ def predict_race(arg):
     #   and the filtered corpus vectors.
     # Levenshtein is an expensive operation so we don't
     #   want to calculate it for every name in the corpus
-    lev_dist = calc_leven_vector(row_data['name_last'],
-                          filtered_corpus_df['name_last'])
+    lev_dist = calc_leven_vector(row_data["name_last"], filtered_corpus_df["name_last"])
 
     # The calc_leven function returns a dictionary
     #  we seperate the keys from the values into arrays
@@ -50,7 +49,7 @@ def predict_race(arg):
     values = np.array(list(lev_dist.values()))
     keys = np.array(list(lev_dist.keys()))
 
-    if (k < values.shape[0]):
+    if k < values.shape[0]:
         # This is when k is smaller than the size of the
         #   values array, we can partition it by the smallest
         #   k values
@@ -69,22 +68,23 @@ def predict_race(arg):
 
     mask = (values <= max_value) & (values > 0)
     mask_idx = np.argwhere(mask).reshape(-1)
-    df_idx = keys[mask_idx]    
-    
+    df_idx = keys[mask_idx]
+
     filter_df = corpus_df.iloc[df_idx]
 
-    total_sum  = (filter_df['total_n'].sum())
-    pred_white = (filter_df['nh_white'].dot(filter_df['total_n'])).sum() / total_sum
-    pred_black = (filter_df['nh_black'].dot(filter_df['total_n'])) / total_sum
-    pred_hispanic = (filter_df['hispanic'].dot(filter_df['total_n'])).sum() / total_sum
-    pred_asian = (filter_df['asian'].dot(filter_df['total_n'])).sum() / total_sum
+    total_sum = filter_df["total_n"].sum()
+    pred_white = (filter_df["nh_white"].dot(filter_df["total_n"])).sum() / total_sum
+    pred_black = (filter_df["nh_black"].dot(filter_df["total_n"])) / total_sum
+    pred_hispanic = (filter_df["hispanic"].dot(filter_df["total_n"])).sum() / total_sum
+    pred_asian = (filter_df["asian"].dot(filter_df["total_n"])).sum() / total_sum
     predictions = [pred_asian, pred_hispanic, pred_black, pred_white]
 
     # final_pred.append(predictions.index(max(predictions)))
-    test_df.loc[test_df['name_last'] == row_data['name_last'],
-                'pred_race'] = predictions.index(max(predictions))
+    test_df.loc[
+        test_df["name_last"] == row_data["name_last"], "pred_race"
+    ] = predictions.index(max(predictions))
 
-    return predictions.index(max(predictions))
+    return predictions.index(max(predictions)), max(predictions)
 
 
 def calc_leven(orig_string, filt_df):
@@ -98,6 +98,7 @@ def calc_leven(orig_string, filt_df):
         lev_dist[0] = lev
     return lev_dist
 
+
 def calc_leven_vector(orig_string, filt_df):
     if not (isinstance(filt_df, str)):
         lev_dist = filt_df.apply(lambda c: lv.distance(orig_string, c))
@@ -106,9 +107,10 @@ def calc_leven_vector(orig_string, filt_df):
         lev = lv.distance(orig_string, filt_df)
         return {0: lev}
 
+
 def calc_prop(row):
-    total = row['total_n']
-    values = [(i/total) for i in row]
+    total = row["total_n"]
+    values = [(i / total) for i in row]
     return pd.Series(values)
 
 
@@ -121,7 +123,7 @@ def find_ngrams(text, n):
     a = zip(*[text[i:] for i in range(n)])
     wi = []
     for i in a:
-        w = ''.join(i)
+        w = "".join(i)
         try:
             idx = words_list.index(w)
         except:
@@ -132,15 +134,21 @@ def find_ngrams(text, n):
 
 def check_k(test_df, corpus_df, k, filt):
     results = []
+    probas = []
 
-    num_cpu = mp.cpu_count() 
-    pool = mp.pool.ThreadPool(processes=8)
+    num_cpu = mp.cpu_count()
+    pool = mp.pool.ThreadPool(processes=4)
 
-    corp_vector = np.array([x for x in corpus_df['tfidf']])
+    corp_vector = np.array([x for x in corpus_df["tfidf"]])
 
     # for idx, row in tqdm(test_df.iterrows()):
-    r = pool.map(predict_race, [(idx, row, test_df, corpus_df, corp_vector, k, filt)
-                                for idx, row in test_df.iterrows()])
+    r = pool.map(
+        predict_race,
+        [
+            (idx, row, test_df, corpus_df, corp_vector, k, filt)
+            for idx, row in test_df.iterrows()
+        ],
+    )
     results.append(r)
 
     pool.close()
