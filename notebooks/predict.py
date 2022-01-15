@@ -30,7 +30,7 @@ def predict_race(arg):
         # this is to handle if we still are not getting anything
         #  after opening up cosine similarity.  Just return the
         #  most common class, which is nh_white/3 with 1% probability
-        return 3, 0.01
+        return np.array([3, 0.01, 0])
 
     # filtering the corpus dataframe to only inclue the items
     #   that met the cosine similarity filter
@@ -79,12 +79,16 @@ def predict_race(arg):
     pred_asian = (filter_df["asian"].dot(filter_df["total_n"])).sum() / total_sum
     predictions = [pred_asian, pred_hispanic, pred_black, pred_white]
 
-    # final_pred.append(predictions.index(max(predictions)))
     test_df.loc[
         test_df["name_last"] == row_data["name_last"], "pred_race"
     ] = predictions.index(max(predictions))
 
-    return predictions.index(max(predictions)), max(predictions)
+    predict = np.array(predictions.index(max(predictions)), dtype=int, ndmin=1)
+    top_probas = get_largest_values(np.array(predictions), 2)
+
+    pred_arr = np.concatenate((predict, top_probas))
+
+    return pred_arr
 
 
 def calc_leven(orig_string, filt_df):
@@ -133,10 +137,10 @@ def find_ngrams(text, n):
 
 
 def check_k(test_df, corpus_df, k, filt):
-    results = []
-    probas = []
+    results = np.zeros((test_df.shape[0], 3))
+    # predict_df = pd.DataFrame(columns=["predict_idx", "predict_probas"])
 
-    num_cpu = mp.cpu_count()
+    # num_cpu = mp.cpu_count()
     pool = mp.pool.ThreadPool(processes=4)
 
     corp_vector = np.array([x for x in corpus_df["tfidf"]])
@@ -149,9 +153,25 @@ def check_k(test_df, corpus_df, k, filt):
             for idx, row in test_df.iterrows()
         ],
     )
-    results.append(r)
+    # results.append(r)
+    results = r
+    # print(r)
+    # predict_df.append(r, ignore_index=True)
 
     pool.close()
     pool.join()
 
     return results
+
+
+def get_largest_values(arr, num):
+    """  
+    This function is to the largest x values from an array provided
+        and returns them in descending order
+    """
+
+    top_filt = np.argpartition(arr, num)
+    top = arr[top_filt[num:]]
+
+    return top[::-1]
+
