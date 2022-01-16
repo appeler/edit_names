@@ -32,12 +32,12 @@ For another set of analysis, we use the probability estimates and find the k tha
 
 ### Script
 
-* [KNN Edit Distance Classifier Notebook](scripts/knn_cosine_levenshtein_threadpool.ipynb)
+* [KNN Edit Distance Classifier Notebook](notebooks/knn_cosine_levenshtein_threadpool.ipynb)
 
 ### Variations
 
-* **What Happens When We Just Use Cosine Distance?** As the [notebook](scripts/knn_cosine_threadpool.ipynb) shows, results are roughly the same.
-* **What Happens If We Use Weighted Mean Instead of a Simple Average?** As the notebooks for [cosine distance](scripts/knn_cosine_threadpool_with_weighted_mean.ipynb) and [levenshtein with cosine distance](scripts/knn_cosine_levenshtein_threadpool_with_weighted_mean.ipynb) show, the results look pretty much the same. (If you are confused about what that means, take a look at this [notebook](scripts/compare_simple_weighted_mean.ipynb). Here's a quick example: say the closest names are: ABC, n = 100, p_white = 100; BBC, n = 10, p_white = 0 then prediction = (100*1 + 10*0)/110.)
+* **What Happens When We Just Use Cosine Distance?** As the [notebook](notebooks/knn_cosine_threadpool.ipynb) shows, results are roughly the same.
+* **What Happens If We Use Weighted Mean Instead of a Simple Average?** As the notebooks for [cosine distance](notebooks/knn_cosine_threadpool_with_weighted_mean.ipynb) and [levenshtein with cosine distance](notebooks/knn_cosine_levenshtein_threadpool_with_weighted_mean.ipynb) show, the results look pretty much the same. (If you are confused about what that means, take a look at this [notebook](notebooks/compare_simple_weighted_mean.ipynb). Here's a quick example: say the closest names are: ABC, n = 100, p_white = 100; BBC, n = 10, p_white = 0 then prediction = (100*1 + 10*0)/110.)
 
 ### Authors
 
