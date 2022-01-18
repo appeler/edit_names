@@ -17,7 +17,7 @@ For one set of analyses, we assume that the true label for a name is the modal r
 | macro avg     | 0.43      | 0.34   | 0.36     | 43433   |
 | weighted avg  | 0.76      | 0.78   | 0.76     | 43433   |
 
-For another set of analyses, we use the probability estimates can compute the RMSE. The generalization RMSE (for cosine distance only; see below for link to nb) is .16.
+For another set of analyses, we use the distribution (what proportion of people with last name X are nh_black, nh_white, etc.) and compute the RMSE. The generalization RMSE (for cosine distance only; see below for link to nb) is .16.
 
 ### Workflow
 
