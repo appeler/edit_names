@@ -40,6 +40,8 @@ For another set of analyses, we use the distribution (what proportion of people 
 * **What Happens If We Use Weighted Mean Instead of a Simple Average?** As the notebooks for [cosine distance](notebooks/knn_cosine_threadpool_with_weighted_mean.ipynb) and [levenshtein with cosine distance](notebooks/knn_cosine_levenshtein_threadpool_with_weighted_mean.ipynb) show, the results look pretty much the same. (If you are confused about what that means, take a look at this [notebook](notebooks/compare_simple_weighted_mean.ipynb). Here's a quick example: say the closest names are: ABC, n = 100, p_white = 100; BBC, n = 10, p_white = 0 then prediction = (100*1 + 10*0)/110.)
 * **What If We Use RMSE?** The [notebook](notebooks/knn_cosine_threadpool_rmse.ipynb) provides RMSE for cosine distance based knn.
 * **What is the Baseline Performance When We Predict k Most Popular Names?** See [notebook](notebooks/knn_popular_names.ipynb). RMSE is .3 and accuracy is 59%.
+* **Using Minhash LSH/Jaccard for FL 2022** See [notebook](notebooks/knn_last_name_2022_jaccard_lsh.ipynb). We see a 5 point hit to accuracy.
+
 
 ### Authors
 
